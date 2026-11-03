@@ -36,13 +36,14 @@ namespace rig
     void AudioEngine::setInputGainDb (float db)
     {
         JUCE_ASSERT_MESSAGE_THREAD
-        inputGain.store (juce::Decibels::decibelsToGain (db, minGainDb), std::memory_order_relaxed);
+        // 입력 최솟값(-15 dB)은 실제 감쇠이므로 -inf 처리를 하지 않는다 (JUCE 기본 기준 -100 dB)
+        inputGain.store (juce::Decibels::decibelsToGain (db), std::memory_order_relaxed);
     }
 
     void AudioEngine::setOutputGainDb (float db)
     {
         JUCE_ASSERT_MESSAGE_THREAD
-        outputGain.store (juce::Decibels::decibelsToGain (db, minGainDb), std::memory_order_relaxed);
+        outputGain.store (juce::Decibels::decibelsToGain (db, outputMinDb), std::memory_order_relaxed);
     }
 
     void AudioEngine::audioDeviceAboutToStart (juce::AudioIODevice* device)

@@ -21,7 +21,7 @@ namespace rig
     //  ├──────────────────────────────────────────────┤
     //  │ BlockEditor (본문 하단 절반의 위쪽 절반)        │
     //  ├──────────────────────────────────────────────┤
-    //  │ [INPUT 노브]   (예약 영역)       [OUTPUT 노브] │
+    //  │ [INPUT 노브]   (예약 영역)  [OUTPUT 노브][MUTE] │
     //  ├──────────────────────────────────────────────┤
     //  │ StatusBar : IN 미터 | CPU | OUT 미터            │
     //  └──────────────────────────────────────────────┘
@@ -37,6 +37,7 @@ namespace rig
     private:
         void timerCallback() override;
         void openSettings();
+        void updateMuteButton();   // 뮤트 상태(RigModel 소유)를 버튼 색으로 보여준다
 
         juce::AudioDeviceManager& deviceManager;
         AudioEngine& engine;
@@ -46,7 +47,9 @@ namespace rig
         ChainView chainView;
         BlockEditor blockEditor;
         StatusBar statusBar;
-        GainKnob inputKnob { "INPUT" }, outputKnob { "OUTPUT" };
+        GainKnob inputKnob  { "INPUT",  AudioEngine::inputMinDb,  AudioEngine::inputMaxDb,  false };
+        GainKnob outputKnob { "OUTPUT", AudioEngine::outputMinDb, AudioEngine::outputMaxDb, true  };
+        juce::TextButton muteButton { "MUTE" };
 
         juce::Rectangle<int> reservedArea;
 

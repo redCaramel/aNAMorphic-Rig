@@ -45,7 +45,11 @@ namespace rig
         float getInputGainDb() const noexcept  { return inputGainDb; }
         float getOutputGainDb() const noexcept { return outputGainDb; }
         void setInputGainDb (float db);
-        void setOutputGainDb (float db);
+        void setOutputGainDb (float db);   // 뮤트도 함께 해제한다
+
+        // 출력 뮤트: config 에 저장하지 않고 패치를 바꿔도 유지된다. 뮤트 중에도 outputGainDb 는 원래 값
+        bool isOutputMuted() const noexcept { return outputMuted; }
+        void setOutputMuted (bool shouldBeMuted);
 
         // 체인 편집 (블록 개수 제한 없음: CPU 가 버티는 만큼)
         const std::vector<Slot>& getSlots() const noexcept { return slots; }
@@ -74,6 +78,7 @@ namespace rig
 
         int patchNumber = 1;
         float inputGainDb = 0.0f, outputGainDb = 0.0f;
+        bool outputMuted = false;               // loadPatch() 에서 초기화하지 않는다
         std::vector<Slot> slots;
         int selectedIndex = -1;
         juce::uint64 nextSlotId = 1;

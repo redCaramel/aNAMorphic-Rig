@@ -1,7 +1,5 @@
 #include "GainKnob.h"
 
-#include "engine/AudioEngine.h"
-
 namespace rig
 {
     namespace
@@ -60,12 +58,14 @@ namespace rig
 
     //==============================================================================
 
-    GainKnob::GainKnob (const juce::String& name)
+    GainKnob::GainKnob (const juce::String& name, float min, float max, bool minShowsInf)
+        : minDb (min), minIsInf (minShowsInf)
     {
         slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         slider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-        slider.setRange (AudioEngine::minGainDb, AudioEngine::maxGainDb, 0.1);
-        slider.setSkewFactorFromMidPoint (0.0);   // 범위를 정한 뒤에 불러야 한다: 0 dB 가 회전 범위 정중앙
+        slider.setRange (min, max, 0.1);
+        // 범위를 정한 뒤에 불러야 한다: 0 dB 가 회전 범위 정중앙 (대칭 범위면 skew 1 = 선형)
+        slider.setSkewFactorFromMidPoint (0.0);
 
         // 12시 기준 좌우 135도씩: 7시 30분(최소) ~ 4시 30분(최대)
         slider.setRotaryParameters (juce::MathConstants<float>::pi * 1.25f,
@@ -111,9 +111,9 @@ namespace rig
         updateValueLabel();
     }
 
-    juce::String GainKnob::toText (double db)
+    juce::String GainKnob::toText (double db) const
     {
-        if (db <= AudioEngine::minGainDb)
+        if (minIsInf && db <= minDb)
             return "-inf dB";
 
         // 0.1 단위로 맞춘 뒤 판단해야 -0.04 같은 값이 "-0.0" 으로 보이지 않는다

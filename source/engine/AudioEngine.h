@@ -27,9 +27,11 @@ namespace rig
             std::vector<std::shared_ptr<Block>> blocks;
         };
 
-        // 입력/출력 볼륨 범위 (dB). minGainDb 이하는 -inf(무음) 으로 취급
-        static constexpr float minGainDb = -80.0f;
-        static constexpr float maxGainDb =   6.0f;
+        // 입력/출력 볼륨 범위 (dB). 입력의 최솟값은 실제 -15 dB, 출력은 outputMinDb 이하가 -inf(무음)
+        static constexpr float inputMinDb  = -15.0f;
+        static constexpr float inputMaxDb  =  15.0f;
+        static constexpr float outputMinDb = -60.0f;
+        static constexpr float outputMaxDb =  10.0f;
 
         AudioEngine() = default;
         ~AudioEngine() override;

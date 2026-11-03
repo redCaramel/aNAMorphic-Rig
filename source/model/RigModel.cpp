@@ -40,9 +40,10 @@ namespace rig
         {
             const auto json = juce::JSON::parse (file);
 
-            inputGainDb  = juce::jlimit (AudioEngine::minGainDb, AudioEngine::maxGainDb,
+            // 이전 범위(-80 ~ +6 dB)로 저장된 값도 새 범위의 가장 가까운 끝값으로 맞춘다
+            inputGainDb  = juce::jlimit (AudioEngine::inputMinDb, AudioEngine::inputMaxDb,
                                          (float) json.getProperty ("inputGainDb", 0.0));
-            outputGainDb = juce::jlimit (AudioEngine::minGainDb, AudioEngine::maxGainDb,
+            outputGainDb = juce::jlimit (AudioEngine::outputMinDb, AudioEngine::outputMaxDb,
                                          (float) json.getProperty ("outputGainDb", 0.0));
 
             if (auto* blocks = json.getProperty ("blocks", {}).getArray())
@@ -69,8 +70,9 @@ namespace rig
         if (! slots.empty())
             selectedIndex = 0;
 
+        // 뮤트 중이면 새 패치의 출력 값은 멤버에만 두고 엔진에는 계속 무음
         engine.setInputGainDb (inputGainDb);
-        engine.setOutputGainDb (outputGainDb);
+        engine.setOutputGainDb (outputMuted ? AudioEngine::outputMinDb : outputGainDb);
 
         rebuildChain();
         sendChangeMessage();
@@ -78,16 +80,24 @@ namespace rig
 
     void RigModel::setInputGainDb (float db)
     {
-        inputGainDb = juce::jlimit (AudioEngine::minGainDb, AudioEngine::maxGainDb, db);
+        inputGainDb = juce::jlimit (AudioEngine::inputMinDb, AudioEngine::inputMaxDb, db);
         engine.setInputGainDb (inputGainDb);
         savePatch();
     }
 
     void RigModel::setOutputGainDb (float db)
     {
-        outputGainDb = juce::jlimit (AudioEngine::minGainDb, AudioEngine::maxGainDb, db);
+        outputGainDb = juce::jlimit (AudioEngine::outputMinDb, AudioEngine::outputMaxDb, db);
+        outputMuted = false;
         engine.setOutputGainDb (outputGainDb);
         savePatch();
+    }
+
+    void RigModel::setOutputMuted (bool shouldBeMuted)
+    {
+        // 저장하지 않는다: config 에는 뮤트 전 원래 값(outputGainDb)이 남는다
+        outputMuted = shouldBeMuted;
+        engine.setOutputGainDb (outputMuted ? AudioEngine::outputMinDb : outputGainDb);
     }
 
     void RigModel::savePatch() const

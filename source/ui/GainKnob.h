@@ -10,7 +10,8 @@ namespace rig
     class GainKnob final : public juce::Component
     {
     public:
-        explicit GainKnob (const juce::String& name);
+        // minIsInf: true 면 최솟값을 "-inf dB" 로 표시 (출력), false 면 실제 dB 로 표시 (입력)
+        GainKnob (const juce::String& name, float minDb, float maxDb, bool minIsInf);
         ~GainKnob() override;
 
         // 사용자가 노브를 돌렸을 때만 호출 (dB)
@@ -22,8 +23,11 @@ namespace rig
         void resized() override;
 
     private:
-        static juce::String toText (double db);
+        juce::String toText (double db) const;
         void updateValueLabel();
+
+        const float minDb;
+        const bool minIsInf;
 
         // 노브 몸통 + 호(맨 왼쪽 ~ 현재 값) + 지시선
         struct KnobLookAndFeel final : juce::LookAndFeel_V4
