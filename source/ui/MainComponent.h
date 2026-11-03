@@ -4,6 +4,7 @@
 #include "model/RigModel.h"
 #include "ui/BlockEditor.h"
 #include "ui/ChainView.h"
+#include "ui/GainKnob.h"
 #include "ui/StatusBar.h"
 #include "ui/TopBar.h"
 
@@ -20,7 +21,7 @@ namespace rig
     //  ├──────────────────────────────────────────────┤
     //  │ BlockEditor (본문 하단 절반의 위쪽 절반)        │
     //  ├──────────────────────────────────────────────┤
-    //  │ (예약 영역: 이후 기능용)                       │
+    //  │ [INPUT 노브]   (예약 영역)       [OUTPUT 노브] │
     //  ├──────────────────────────────────────────────┤
     //  │ StatusBar : IN 미터 | CPU | OUT 미터            │
     //  └──────────────────────────────────────────────┘
@@ -45,6 +46,7 @@ namespace rig
         ChainView chainView;
         BlockEditor blockEditor;
         StatusBar statusBar;
+        GainKnob inputKnob { "INPUT" }, outputKnob { "OUTPUT" };
 
         juce::Rectangle<int> reservedArea;
 

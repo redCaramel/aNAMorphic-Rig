@@ -18,6 +18,8 @@ namespace rig
     //
     //  {
     //    "version": 1,
+    //    "inputGainDb": 0.0,
+    //    "outputGainDb": -3.5,
     //    "blocks": [ { "type": "nam", "file": "/path/amp.nam", "bypass": false },
     //                { "type": "ir",  "file": "/path/cab.wav", "bypass": false } ]
     //  }
@@ -28,11 +30,20 @@ namespace rig
         slots.clear();
         selectedIndex = -1;
 
+        // config 가 없는 패치로 옮겨도 이전 패치의 볼륨이 남지 않게 먼저 0 dB 로
+        inputGainDb = 0.0f;
+        outputGainDb = 0.0f;
+
         const auto file = paths::patchFile (patchNumber);
 
         if (file.existsAsFile())
         {
             const auto json = juce::JSON::parse (file);
+
+            inputGainDb  = juce::jlimit (AudioEngine::minGainDb, AudioEngine::maxGainDb,
+                                         (float) json.getProperty ("inputGainDb", 0.0));
+            outputGainDb = juce::jlimit (AudioEngine::minGainDb, AudioEngine::maxGainDb,
+                                         (float) json.getProperty ("outputGainDb", 0.0));
 
             if (auto* blocks = json.getProperty ("blocks", {}).getArray())
             {
@@ -58,8 +69,25 @@ namespace rig
         if (! slots.empty())
             selectedIndex = 0;
 
+        engine.setInputGainDb (inputGainDb);
+        engine.setOutputGainDb (outputGainDb);
+
         rebuildChain();
         sendChangeMessage();
+    }
+
+    void RigModel::setInputGainDb (float db)
+    {
+        inputGainDb = juce::jlimit (AudioEngine::minGainDb, AudioEngine::maxGainDb, db);
+        engine.setInputGainDb (inputGainDb);
+        savePatch();
+    }
+
+    void RigModel::setOutputGainDb (float db)
+    {
+        outputGainDb = juce::jlimit (AudioEngine::minGainDb, AudioEngine::maxGainDb, db);
+        engine.setOutputGainDb (outputGainDb);
+        savePatch();
     }
 
     void RigModel::savePatch() const
@@ -77,6 +105,8 @@ namespace rig
 
         auto root = std::make_unique<juce::DynamicObject>();
         root->setProperty ("version", 1);
+        root->setProperty ("inputGainDb", inputGainDb);
+        root->setProperty ("outputGainDb", outputGainDb);
         root->setProperty ("blocks", blocks);
 
         paths::patchFile (patchNumber).replaceWithText (juce::JSON::toString (juce::var (root.release())));

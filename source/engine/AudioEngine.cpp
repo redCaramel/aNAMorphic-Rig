@@ -33,6 +33,18 @@ namespace rig
                        retired.end());
     }
 
+    void AudioEngine::setInputGainDb (float db)
+    {
+        JUCE_ASSERT_MESSAGE_THREAD
+        inputGain.store (juce::Decibels::decibelsToGain (db, minGainDb), std::memory_order_relaxed);
+    }
+
+    void AudioEngine::setOutputGainDb (float db)
+    {
+        JUCE_ASSERT_MESSAGE_THREAD
+        outputGain.store (juce::Decibels::decibelsToGain (db, minGainDb), std::memory_order_relaxed);
+    }
+
     void AudioEngine::audioDeviceAboutToStart (juce::AudioIODevice* device)
     {
         // 장치가 멈춘 상태에서 호출되므로 할당/Reset 이 허용된다
@@ -42,6 +54,11 @@ namespace rig
         sampleRate.store (sr);
         maxBlockSize.store (bs);
         scratch.setSize (2, bs);
+
+        inputSmoothed.reset (sr, 0.02);
+        outputSmoothed.reset (sr, 0.02);
+        inputSmoothed.setCurrentAndTargetValue (inputGain.load (std::memory_order_relaxed));
+        outputSmoothed.setCurrentAndTargetValue (outputGain.load (std::memory_order_relaxed));
 
         if (owned != nullptr)
             for (auto& block : owned->blocks)
@@ -77,6 +94,9 @@ namespace rig
 
         const int blockSize = juce::jmin (scratch.getNumSamples(), maxBlockSize.load());
 
+        inputSmoothed.setTargetValue (inputGain.load (std::memory_order_relaxed));
+        outputSmoothed.setTargetValue (outputGain.load (std::memory_order_relaxed));
+
         for (int offset = 0; offset < numSamples && blockSize > 0; offset += blockSize)
         {
             const int n = juce::jmin (blockSize, numSamples - offset);
@@ -95,6 +115,9 @@ namespace rig
                 juce::FloatVectorOperations::clear (a, n);
             }
 
+            // 입력 볼륨 (IN 미터는 게인 앞에서 잰다)
+            inputSmoothed.applyGain (a, n);
+
             // 직렬 체인: a -> 블록 -> b, 그다음 a/b 를 바꿔가며 진행
             if (chain != nullptr)
             {
@@ -104,6 +127,9 @@ namespace rig
                     std::swap (a, b);
                 }
             }
+
+            // 출력 볼륨 (OUT 미터는 게인 뒤에서 잰다)
+            outputSmoothed.applyGain (a, n);
 
             storeMax (outputPeak, juce::FloatVectorOperations::findMaximum (a, n));
             storeMax (outputPeak, -juce::FloatVectorOperations::findMinimum (a, n));
